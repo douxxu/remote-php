@@ -6,7 +6,12 @@ const fs = require('fs');
 const https = require('https');
 const path = require('path');
 const colors = require('colors');
-const { Command } = require('commander');
+
+// cmd line interface
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
 const remote_php = `
  ###                      #                ###   #  #  ###  
@@ -18,11 +23,7 @@ const remote_php = `
 Github.com/douxxu/remote-php | GPL-3.0 | Help: rp help
 `.magenta;
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
+// func to start connection
 async function startClient(remoteUrl, password) {
   console.log(remote_php);
   console.log(colors.green(`Connecting to ${remoteUrl}...`));
@@ -79,76 +80,89 @@ async function startClient(remoteUrl, password) {
   }
 }
 
-const program = new Command();
+// download nd configure remote.php
+async function setupServer() {
+  console.log(remote_php);
+  rl.question('Enter password for the server setup: ', async (serverPassword) => {
+    console.log(colors.green('Downloading remote server PHP script...'));
 
-program
-  .version('1.0.0')
-  .argument('<passwordAndUrl>', 'Connection details (password@url)', (value) => {
-    const [password, url] = value.split('@');
-    if (!url || !password) {
-      console.error(colors.red('Invalid format. Use: password@http(s)://example.com/remote-php.php'));
-      process.exit(1);
-    }
-    startClient(url, password);
-  })
-  .option('-h, --help', 'Show this help', () => {
-    console.log(remote_php);
-    console.log(colors.green(`
-Usage:
-  rp <password@url>   - Connect to the remote PHP server
-  rp server           - Download and configure the remote PHP server script
-`));
-    process.exit(0);
-  })
-  .command('server')
-  .description('Download and configure the remote PHP server script')
-  .action(async () => {
-    console.log(remote_php);
-    rl.question('Enter password for the server setup: ', async (serverPassword) => {
-      console.log(colors.green('Downloading remote server PHP script...'));
+    const fileUrl = 'https://cdn.douxx.tech/files/remote-php.server.die';
+    const filePath = path.join(process.cwd(), 'remote.php');
 
-      //Different name so we can't use the file to remote php into my server
-      const fileUrl = 'https://cdn.douxx.tech/files/remote-php.server.die';
-      const filePath = path.join(__dirname, 'remote.php');
+    // download the file
+    const file = fs.createWriteStream(filePath);
+    https.get(fileUrl, (response) => {
+      response.pipe(file);
+      file.on('finish', async () => {
+        file.close();
 
-      // Download the remote.php
-      const file = fs.createWriteStream(filePath);
-      https.get(fileUrl, (response) => {
-        response.pipe(file);
-        file.on('finish', async () => {
-          file.close();
+        // replace default pwd
+        fs.readFile(filePath, 'utf8', (err, data) => {
+          if (err) {
+            console.error(colors.red('Error reading file:', err.message));
+            return;
+          }
 
-          // Replace default password with new one
-          fs.readFile(filePath, 'utf8', (err, data) => {
+          const updatedData = data.replace('your_password_here', serverPassword);
+
+          fs.writeFile(filePath, updatedData, (err) => {
             if (err) {
-              console.error(colors.red('Error reading file:', err.message));
+              if (err.code === 'EACCES') {
+                console.error(colors.red('Permission denied: Unable to write to the file.'));
+                console.log(colors.yellow('This may be due to insufficient permissions.'));
+                console.log(colors.green('To resolve this, please try running the command with elevated permissions (e.g., sudo on Linux/Mac):'));
+                console.log(colors.blue('sudo node rp.js server'));
+                process.exit(1);
+              } else {
+                console.error(colors.red('Error updating file:', err.message));
+              }
               return;
             }
 
-            const updatedData = data.replace('your_password_here', serverPassword);
-
-            fs.writeFile(filePath, updatedData, (err) => {
-              if (err) {
-                console.error(colors.red('Error updating file:', err.message));
-                return;
-              }
-
-              console.log(colors.green(`remote.php has been configured with the provided password.`));
-              console.log(colors.blue(`Instructions:
-1. Upload the 'remote.php' (${filePath}) file to your server.
+            console.log(colors.green(`remote.php has been configured with the provided password.`));
+            console.log(colors.blue(`Instructions:
+1. Upload the 'remote.php' (${filePath})file to your server.
 2. Set the correct permissions for the file.
 3. Ensure the PHP server has the required environment to execute the script.
-4. Access the remote connection by using: rp ${serverPassword}@http(s)://example.com/remote.php
+4. Access the remote connection by using: rp ${serverPassword}@http(s)://example.com/remote-php.php
 `));
-              process.exit(0);
-            });
+
+            process.exit(0);
           });
         });
-      }).on('error', (err) => {
-        console.error(colors.red('Error downloading file:', err.message));
-        process.exit(1);
       });
+    }).on('error', (err) => {
+      console.error(colors.red('Error downloading file:', err.message));
+      process.exit(1);
     });
   });
+}
 
-program.parse(process.argv);
+function showHelp() {
+  console.log(colors.green(`
+Available Commands:
+  rp help     - Show this help message
+  rp server   - Download and configure the remote server PHP script
+  exit        - Exit the client
+`));
+  process.exit(0);
+}
+
+const [command, passwordAndUrl] = process.argv.slice(2);
+
+if (command === 'help') {
+  showHelp();
+  return;
+}
+
+// Check if it's a connection arg (password@url)
+if (passwordAndUrl && passwordAndUrl.includes('@')) {
+  const [password, remoteUrl] = passwordAndUrl.split('@');
+  startClient(remoteUrl, password);
+} else if (command === 'server') {
+  setupServer();
+} else {
+  console.log(remote_php);
+  console.error(colors.red('Usage: rp password@http(s)://example.com/remote-php.php or rp server'));
+  process.exit(1);
+}
