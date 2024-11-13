@@ -87,7 +87,7 @@ async function setupServer() {
     console.log(colors.green('Downloading remote server PHP script...'));
 
     const fileUrl = 'https://cdn.douxx.tech/files/remote-php.server.die';
-    const filePath = path.join(process.cwd(), 'remote.php');
+    const filePath = path.join(process.cwd(), 'remote.php'); // Use the current working directory
 
     // download the file
     const file = fs.createWriteStream(filePath);
@@ -121,7 +121,7 @@ async function setupServer() {
 
             console.log(colors.green(`remote.php has been configured with the provided password.`));
             console.log(colors.blue(`Instructions:
-1. Upload the 'remote.php' (${filePath})file to your server.
+1. Upload the 'remote.php' (${filePath}) file to your server.
 2. Set the correct permissions for the file.
 3. Ensure the PHP server has the required environment to execute the script.
 4. Access the remote connection by using: rp ${serverPassword}@http(s)://example.com/remote-php.php
@@ -148,7 +148,16 @@ Available Commands:
   process.exit(0);
 }
 
-const [command, passwordAndUrl] = process.argv.slice(2);
+// Debugging step: Log the raw argument to see what is passed
+console.log("Raw arguments:", process.argv.slice(2));
+
+const [command] = process.argv.slice(2);
+
+// Debugging: Check if arguments are correctly parsed
+if (!command) {
+  console.error(colors.red("No command provided! Usage: rp password@http(s)://example.com/remote-php.php or rp server"));
+  process.exit(1);
+}
 
 if (command === 'help') {
   showHelp();
@@ -156,8 +165,9 @@ if (command === 'help') {
 }
 
 // Check if it's a connection arg (password@url)
-if (passwordAndUrl && passwordAndUrl.includes('@')) {
-  const [password, remoteUrl] = passwordAndUrl.split('@');
+if (command && command.includes('@')) {
+  const [password, remoteUrl] = command.split('@');
+
   startClient(remoteUrl, password);
 } else if (command === 'server') {
   setupServer();
