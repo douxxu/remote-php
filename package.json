@@ -1,6 +1,6 @@
 {
   "name": "remote-php",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "A simple command-line tool that allows you to execute commands remotely on a PHP server through an interactive terminal interface.",
   "main": "./src/rp.js",
   "scripts": {
@@ -28,8 +28,7 @@
   "homepage": "https://github.com/douxxu/remote-php#readme",
   "dependencies": {
     "axios": "*",
-    "colors": "*",
-    "commander": "*"
+    "colors": "*"
 }
 
 }
