@@ -1,0 +1,35 @@
+{
+  "name": "remote-php",
+  "version": "1.0.0",
+  "description": "A simple command-line tool that allows you to execute commands remotely on a PHP server through an interactive terminal interface.",
+  "main": "./src/rp.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "rp": "./src/rp.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/douxxu/remote-php.git"
+  },
+  "keywords": [
+    "php",
+    "terminal",
+    "control",
+    "management",
+    "shell"
+  ],
+  "author": "douxx",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/douxxu/remote-php/issues"
+  },
+  "homepage": "https://github.com/douxxu/remote-php#readme",
+  "dependencies": {
+    "axios": "*",
+    "colors": "*",
+    "commander": "*"
+}
+
+}
