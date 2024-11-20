@@ -35,10 +35,13 @@ npm install -g remote-php
 
 ### 2. Setup the remote.php file
 
+> You can also use "remote-php" instead of "rp"
+
 To run the server-side script, you'll need to download the remote.php file with the command
 ```bash
 rp server
 ```
+
 
 - Upload `remote.php` to your server (for example, `http(s)://your-server/remote.php`).
 - Set the correct permissions for the file on your server.
